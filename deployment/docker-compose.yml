@@ -1,0 +1,59 @@
+version: '3.1'
+
+services:
+  shopql:
+      restart: always
+      build:
+        context: ../.
+        dockerfile: build/Dockerfile
+      image: shopql:latest
+      ports:
+        - 8080:8080
+      depends_on:
+        - "postgres"
+        - "mongo"
+      command: 
+       - ["/app/wait-for-it.sh", "postgres:5432", "--", "/app/shopql"]
+       - ["/app/wait-for-it.sh", "mongo:27017", "--", "/app/shopql"]
+
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    ports:
+      - 27017:27017
+    networks:
+      - mongo-network
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
+    depends_on:
+      - mongo
+    networks:
+      - mongo-network
+  postgres: 
+    image: postgres:15-alpine 
+    restart: always 
+    environment: 
+      POSTGRES_DB: shopql 
+      POSTGRES_USER: postgres 
+      POSTGRES_PASSWORD: 123 
+      PGDATA: /var/lib/postgresql/pgdata
+    ports:
+      - "5429:5432"
+    volumes:
+      - .:/var/lib/postgresql/data 
+      - './postgresql/:/docker-entrypoint-initdb.d/'
+
+networks:
+  mongo-network:
+    driver: bridge

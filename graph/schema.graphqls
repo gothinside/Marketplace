@@ -1,0 +1,138 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+directive @authorized on FIELD_DEFINITION
+directive @hasRole(role: Role!) on FIELD_DEFINITION
+
+enum Role {
+    admin
+    user
+    superuser
+}
+
+
+input ItemInput{
+  itemID: Int!
+  catalogID: Int!
+  name: String!
+  sellerID: Int!
+  inStock: Int!
+}
+
+input CatalogInput{
+  catalogID: Int!
+  name: String!
+  parentID: Int
+  items: [ItemInput]
+}
+
+input UserRole{
+  userID: Int!
+  roleID: Int!
+}
+
+
+input RateInput{
+  itemID: Int!
+  rate: Int!
+ }
+
+
+input CommentInput{
+  itemID: Int!
+  commentText: String!
+ }
+
+ input CommentToCommentInput{
+  commentID: String!
+  commentText: String!
+ }
+
+type Comment {
+  userID: Int!
+  itemsID: Int!
+  parentID: String
+  rate: Int!
+  commentText: String!
+}
+
+
+
+type CartItem {
+  quantity: Int!
+  item: Item!
+}
+
+type UserInfo {
+  UserID: Int!
+  RoleID: Int!
+}
+
+input CartInput {
+  itemID: Int!
+  quantity: Int!
+}
+
+type Order {
+  userID: Int!
+  orderID: Int!
+  items: [CartItem!]!
+  status: String!
+}
+
+type Catalog {
+  id: Int!
+  name: String!
+  parent_id: Int
+  childs: [Catalog!]!
+  items(limit: Int, offset: Int): [Item!]!
+}
+
+type MyCart {
+  items: [Item!]!
+  quantity: Int!
+}
+
+type Seller {
+  id: Int!
+  name: String!
+  item_ids: [Int!]!
+  items(limit: Int, offset: Int): [Item!]!
+}
+
+type Item {
+  id: Int!
+  name: String!
+  seller: Seller!
+  parent: Catalog
+  in_stock: Int!
+  inStockText: String!
+  rate: Float!
+  seller_id: Int!
+  inCart: Int! @authorized
+  catalog_id: Int!
+}
+
+type Query{
+  Catalog(ID: String): Catalog
+  Seller(ID: String!): Seller!
+  MyCart: [CartItem!]!
+  MyOrders: [Order]!
+  UserOrders(ID: Int!): [Order]! @hasRole(role: admin)
+  UserCards(ID: Int!): [CartItem]! @hasRole(role: admin)
+}
+
+
+type Mutation{
+  RateItem(in: RateInput): Item! @authorized
+  AddToCart(in: CartInput): [CartItem!]! @authorized
+  RemoveFromCart(in: CartInput): [CartItem]! @authorized
+  AddCommentToItem(in: CommentInput): Comment @authorized
+  AddCommentToComment(in: CommentToCommentInput): Comment @authorized
+  CreateAnOrder(in: String): Order! @authorized
+  AddItem(in: ItemInput!): Item! @hasRole(role: admin)
+  AddCatalog(in: CatalogInput!): Catalog! @hasRole(role: admin)
+  AddRoleForUser(in: UserRole): UserInfo! @hasRole(role: superuser)
+}
+
